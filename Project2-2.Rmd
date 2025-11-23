@@ -1,0 +1,520 @@
+---
+title: "MATH 4753 Project 2"
+author: "Garrett Falast"
+date:  "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    code_folding: show
+    csl: biomed-central.csl
+    df_print: paged
+    fig_caption: yes
+    fig_height: 6
+    fig_width: 7
+    number_sections: yes
+    theme: journal
+    toc: yes
+    toc_float: yes
+  word_document:
+    toc: yes
+    toc_depth: 4
+  pdf_document:
+    df_print: kable
+    fig_caption: yes
+    fig_height: 6
+    fig_width: 7
+    highlight: tango
+    toc: yes
+    toc_depth: 4
+bibliography: references.bib
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(mosaic)
+library(s20x)
+```
+
+
+
+# Abstract
+
+In this project, I am going to study how the distance from a fire station affects the amount of fire damage during house fires. Using data from 15 fires in a suburban area and my statistical knowledge of simple linear regression, I am going to look at how far each house was from the station, how much damage was caused, and then using simple linear regression build a model to predict fire damage based on distance. The data from my project will be taken from a practice problem in William M. Mendenhall & Terry L. Sincich's textbook, Statistics for Engineering and the Sciences 6th Edition (2016). @crawley2012 @millar2011
+
+![Fire Station](/Users/garrettfalast/Downloads/firesss.jpg)
+@moore2025
+
+# Introduction
+## Description
+
+House fires can be destructive events that lead to major financial impacts and emotional stress. In suburban areas, the responsiveness of emergency services and firefighters can have a strong impact on how much damage a house fire is able to do. One major factor to take into consideration while analyzing response time is the distance between the property on fire and the nearest fire station. @hazen2024
+
+![OKC Fire Station Zoning Map](/Users/garrettfalast/Downloads/fire_station_locations.jpg)
+@okc2025
+
+## What are the Variables?
+
+The dataset I am using contains information about 15 fires in a suburban area. For each incident involving a fire, two variables were recorded:
+
+- The distance from the nearest fire station (miles)
+- The estimated about of property damage (thousands of dollars)
+
+```{r}
+FIREDAM <- read.csv("FIREDAM.csv")
+head(FIREDAM)
+```
+**Important note: distances are recorded in miles and damage is recorded in thousands of dollars**
+
+```{r}
+names(FIREDAM)
+```
+
+### Example of Extreme House Fire damage
+![Catastrophic House Fire Damage](/Users/garrettfalast/Downloads/damage.jpg)
+@balling2022
+
+### Plot the Data
+```{r}
+g = ggplot(FIREDAM, aes(x=DISTANCE, y=DAMAGE,)) + geom_point()
+g = g + geom_smooth(method="loess")
+g
+```
+
+```{r}
+ggplot(FIREDAM, aes(x = DISTANCE)) +
+  geom_histogram(binwidth = 0.5, fill = "skyblue", color = "black") +
+  labs(title = "House Distances Distribution",
+       x = "Distance from Fire Station (miles)",
+       y = "Count")
+
+```
+
+```{r}
+scatter <- ggplot(FIREDAM, aes(x=DISTANCE, y=DAMAGE, color=DISTANCE)) + geom_point(size=3) + geom_smooth(method="lm", se=TRUE, color="black") + labs(title="Fire Damage vs Distance", x="Distance (Miles)", y="Damage (Thousands of Dollars)")
+
+scatter
+```
+
+## How was the data collected?
+
+The data for this project was collected by recording the outcomes of 15 fires that occured in a suburban area. For each fire, the distance from the nearest fire station (in miles) and the estimated amount of property damage (in thousands of dollars) was recorded.
+
+## What is the story behind the data?
+
+A fire insurance company wanted to study how the distance from a fire station affects the amount of damage caused by house fires. They collected data from 15 residential fires that all happened in a large suburb of a major city.
+
+![Fire Damage Restoration Estimates](/Users/garrettfalast/Downloads/homeguide-house-fire-restoration-costs-chart.jpg)
+@bozkurt2025
+
+## Why was it gathered?
+
+The main goal of gathering the data was to build a model to help them understand if greater distances actually led to more damage. The data could help predict how much worse a fire might be if a house is further from a fire station.
+
+With approximately 375,000 homes in the United States catching fire every year, having a significant understanding of factors that contribute to fire damage can help us decrease the impact that large fires have on homes in suburban areas (Bozkurt 2025).
+
+## What is my interest in the data?
+
+I am interested in this data because it shows how small, real-world decisions, like fire-station zoning distances, can have a major impact on the social and financial well-being of people. The ability to appropriately and accurately predict fire damage based on distance from a fire station is an important skill that can help save millions of lives, and an example of how modern statistics can be applied to help improve our society (Bozkurt, 2025).
+
+## Problem Statement/What Problem Do I Wish to Solve?
+
+For this project, I will study how the distance a property is from a fire station affects the amount of fire damage. Using simple linear regression, we can model the relationship between fire distance and damage, and build a model that is able to predict expected fire damage based on distance. We want to understand the relationship between these two variables to better help city planners in predicting optimal locations to place future fire stations.
+
+# Theory Behind the SLR
+
+## The Linear Regression Model
+
+For this project, we want to analyze how the distance a property is from a fire station impacts the amount of fire damage. Initially, it makes sense to think that houses further away might experience more fire damage due to increased traveling distances for fire fighters. 
+
+To model the relationship between distance and damage, we wil use a simple linear regression model that assumes my dependent variable, fire damage ($y$), depends linearly on distance ($x$) plus some random error value. The equation for this statement can be written as:
+
+$$
+y = \beta_0 + \beta_1 x + \epsilon
+$$
+
+- $y$ represents the fire damage (in thousands of dollars)
+- $x$ represents the distance from the fire station (in miles)
+- $\beta_0$ intercept represents the expected damage when distance is zero
+- $\beta_1$ represents the slope (change in expected damage per mile)
+- $\epsilon$ represents the random error
+
+## Assumptions of the SLR
+
+For the SLR model to give consistent and reliable results, we need to make a few assumptions. The following need to hold true for results to be considered reliable and consistent:
+
+- Constant Variance: $E(\epsilon) = 0$
+
+- Variance of the errors stays constant for all values of the predictor(s): $V(\epsilon) = \sigma^2$
+
+- Errors are normally distributed: $\epsilon \sim N(0, \sigma^2)$
+
+- Errors are independent: \( \text{Cov}(\epsilon_i, \epsilon_j) = 0 \text{ for all } i \neq j \)
+
+## Interpretation of Parameters
+
+Within our fire damage model, it is important to understand the meaning behind the parameters to fully grasp the results of the model.
+
+- $\beta_0$ represents the expected damage for a house located directly next to the fire station at a distance = 0
+
+- $\beta_1$ represents how much we can expect fire damage to increase every additional mile further a house is located from a fire station
+
+Finding $\beta_1$ positive would provide significant support for the idea that increasing the distance between a house and a fire station results in more damage
+
+## Least Squares Estimates
+
+A core idea behind simple linear regression is the least squares estimation method, which determines the best-fitting line by finding values of $\beta_0$ and $\beta_1$ that minimuze the sum of the squared differences between observed and predicted values. This can be expressed mathematically as:
+
+$$
+\min_{\beta_0, \beta_1} \sum_{i=1}^{n} (y_i - \beta_0 - \beta_1 x_i)^2
+$$
+We square the differences to ensure all errors are positive which contributes to making the problem smooth.
+
+# Checks on Validity with Mathematical Expressions
+
+Before relying fully on the results from our SLR model, we need to ensure that the main assumptions behind the model are valid and met. We can perform checks to make sure that the relationship between the variables is in fact valid, and that each individual experiment is independent of the others. The following statistical checks and plots are being applied to directly ensure these assumptions and connect the results back to our mathematical statements.
+
+## Straight Trend Line
+```{r}
+ggplot(FIREDAM, aes(x = DISTANCE, y = DAMAGE)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, color = "black") +
+  labs(title = "Fire Damage vs Distance",
+       x = "Distance from Fire Station (miles)",
+       y = "Fire Damage (Thousands of Dollars)")
+```
+
+This scatterplot of distance vs fire damage shows a very clear trend line. The points follow a straight-line pattern and support our assumption that a simple linear regression model is appropriate for this dataset.
+
+## Errors Distributed Normally
+
+One of the assumptions for our simple linear regression model that we need to hold is that the errors are normally distributed. To ensure that this is true, we can create a plot of the residuals and perform a Shapiro-Wilk test for normality:
+
+First, we can fit a simple linear regression model using the distance from the fire-station and fire damage as variables. We can use the built-in lm() function to create the model and then extract the residuals using resid()
+```{r}
+# fit linear model
+model = lm(DAMAGE ~ DISTANCE, data = FIREDAM)
+residuals = resid(model)
+```
+
+The residuals represent the differences between the fire damage and predicted damage based on the fitted line. To check whether the residuals are normally distributed and meet certain assumptions, we can create a Q-Q plot:
+```{r}
+qqnorm(residuals)
+qqline(residuals, col = "red")
+```
+
+qqnorm() plots the samples of the residuals from a normal distribution, and qqline() adds a reference line that helps us visualize what we could expect if the residuals were exactly normal.
+
+The pattern given by the output of the Q-Q plot shows us that most of the residuals fall close to the reference line with minor deviations. This satisfies our assumption that the errors follow a normal distribution, which can be written as:
+
+$$
+\epsilon \sim N(0, \sigma^2)
+$$
+
+#### Residuals vs Fitted Values
+```{r}
+plot(model$fitted.values, resid(model),
+     main = "Residuals vs Fitted Values",
+     xlab = "Fitted Values",
+     ylab = "Residuals",
+     pch = 19,
+     col = "blue")
+abline(h = 0, col = "red", lty = 2)
+```
+
+### Shapiro-Wilk Test
+
+We can also run a Shapiro-Wilk test on the residuals to test for normality.
+```{r}
+shapiro.test(residuals)
+```
+
+Since the resulting p-value is much greater than 0.05, there is no strong evidence against the normality of the residuals.
+
+#### Q-Q Plot with Shapiro-Wilk Test
+```{r}
+# qq plot of residuals
+par(mfrow = c(1, 2))
+qqnorm(residuals, main = "QQ Plot of Residuals")
+qqline(residuals, col = "red")
+
+hist(residuals, 
+     main = "Histogram of Residuals", 
+     xlab = "Residuals", 
+     col = "red", 
+     border = "white", 
+     freq = FALSE)
+lines(density(residuals), col = "black", lwd = 2, lty = 2)
+```
+
+## Constant Variance
+
+Another important assumption of a simple linear regression model is that the variance of each error remains the same across all levels. In other words, the spread of residuals should not greatly increase or decrease with our fitted values.
+
+### Plot of Residuals vs Fitted Values
+```{r}
+plot(model$fitted.values, residuals,
+     xlab = "Fitted Values",
+     ylab = "Residuals",
+     main = "Residuals vs Fitted Values")
+abline(h = 0, col = "red")
+```
+
+In this plot of residuals vs fitted values, the residuals seem to be randomly scattered about the horizontal line y=0. This spread with no clear pattern suggests that the variance of errors is constantly across the range of fitted values, leading us to the conclusion that the constant-variance assumption seems to be satisfied for this model.
+
+## Zero Mean Value of ε
+
+An assumption of simple linear regression is that the mean of error terms is zero, which can be written as:
+
+$E(\epsilon) = 0$
+
+Looking at our residuals vs fitted values plot, we observe that the residuals appear randomly scattered around the line at y=0. We can also calculate the mean of residuals.
+```{r}
+mean(residuals)
+```
+
+This outcome of 0 is expected because an important mathematical property of the least square regression method is that the sum of residuals is zero. As a result of this property, the average residual is also zero, supporting the assumption that the mean of error terms is zero.
+**This is important theory to understand the fact that mean(residuals)=0 is not just a coincidence!**
+
+## Independence of Data
+
+A critical assumption of a simple linear regression is that each experiment/observation are all independent of each other. In the context of our data, this independence relates to the fact that the amount of damage inflicted on one house by a fire does not overlap/interfere with the damage experienced by other houses. Any implications of repeated trials or clustering would invalidate these conditions however. We can reasonably assume that the data for this project was collected from different residential fires that occurred separately.
+
+# Comparing Models
+
+To determine whether a linear regression or quadratic regression model is better suited for this data relationship, we can fit both a simple linear regression model and a quadratic regression model
+
+## Model Summaries and Using Adjusted R^2
+```{r}
+# fit linear model
+linear <- lm(DAMAGE ~ DISTANCE, data=FIREDAM)
+summary(linear)
+
+# fit quadratic model
+quadratic <- lm(DAMAGE~DISTANCE + I(DISTANCE^2), data=FIREDAM)
+summary(quadratic)
+```
+
+We can see that the multiple and adjusted $R^2$ values for the quadratic model (0.9347 and 0.9238) are slightly greater than those of the linear model (0.9235 and 0.9176), respectively.
+
+However, in our quadratic model, when we add another predictor (DISTANCE^2), it does not significantly detail additional variation in the fire damage. As a result, the small increase in multiple $R^2$ is slightly outweighed by the damage done through complexity added in the adjusted $R^2$, making the quadratic model slightly worse overall.
+
+### Linear Plots
+```{r}
+par(mfrow = c(2, 2))
+
+# residuals vs fitted
+plot(linear$fitted.values, resid(linear),
+     main = "Residuals vs Fitted Linear",
+     xlab = "Fitted Values", ylab = "Residuals")
+abline(h = 0, col = "red")
+
+# normal qq plot
+qqnorm(resid(linear), main = "Normal Q-Q Plot Linear")
+qqline(resid(linear), col = "red")
+
+# fitted line scatterplot
+plot(FIREDAM$DISTANCE, FIREDAM$DAMAGE,
+     main = "Fire Damage vs Distance Linear",
+     xlab = "Distance (Miles)", ylab = "Damage (Thousands of Dollars)")
+abline(linear, col = "lightblue")
+
+# histogram of residuals
+hist(resid(linear),
+     main = "Hist of Residuals Linear",
+     xlab = "Residuals", breaks = 10)
+```
+
+### Quadratic Plots
+```{r}
+par(mfrow = c(2, 2))
+
+# residuals vs fitted
+plot(quadratic$fitted.values, resid(quadratic),
+     main = "Residuals vs Fitted Quadratic",
+     xlab = "Fitted Values", ylab = "Residuals")
+abline(h = 0, col = "red")
+
+# normal quadratic qqplot
+qqnorm(resid(quadratic), main = "Normal Q-Q Plot Quadratic")
+qqline(resid(quadratic), col = "red")
+
+# scatterplot with fitted line 
+plot(FIREDAM$DISTANCE, FIREDAM$DAMAGE,
+     main = "Fire Damage vs Distance Quadratic",
+     xlab = "Distance (Miles)", ylab = "Damage (Thousands of Dollars)")
+points(FIREDAM$DISTANCE, fitted(quadratic), col = "blue", type = "l")
+
+# quadratic histogram of residuals
+hist(resid(quadratic),
+     main = "Histogram of Residuals Quadratic",
+     xlab = "Residuals", breaks = 10)
+```
+
+Analyzing both models, the Q-Q plots show that the residuals closely follow the normal line, and there is no major improvement observed with a quadratic model.
+
+Both models fit the trend of the data well, but there is no strong curvature to justify the inclusion of any quadratic terms. The relationship between the fire distance and damage appears to be very close to a straight-line trend.
+
+Because the linear model satisfies our main assumptions for simple linear regression and adding a quadratic term provided nothing meaningful to improve the model, we can conclude that the simple linear model is a better choice.
+
+# Analysis of the Data
+
+In this section, we will explore the relationship created by distance from the fire station and fire damage using simple linear regression. We will analyze the model visually and computationally to assess our assumptions, interpret the regression summary, and calculate our confidence intervals. We will also use our created model to recognize any outliers that may be affecting the result.
+
+## Analysis Using Plots
+### Scatterplot with Fitted Trend Line
+```{r}
+ggplot(FIREDAM, aes(x = DISTANCE, y = DAMAGE)) +
+  geom_point(color = "black") +
+  geom_smooth(method = "lm", se = TRUE, color = "red") +
+  labs(
+    title = "Fire Damage vs Distance from Fire Station",
+    x = "Distance (Miles)",
+    y = "Damage (Thousands of Dollars)"
+  ) +
+  theme_minimal()
+```
+
+This scatterplot with an added trend line supports demonstrates a strong linear relationship between distance from fire station and damage totals. We can interpret from the fitted regression line that a linear model is a great fit for this data.
+
+### Actual vs Predicted Plot
+```{r}
+actual_values <- FIREDAM$DAMAGE
+
+# predicted values
+fitted_values = fitted(linear)
+plot(fitted_values, FIREDAM$DAMAGE,
+     main = "Actual vs Predicted Values",
+     xlab = "Predicted Fire Damage",
+     ylab = "Actual Fire Damage",
+     pch = 19, col = "darkgreen")
+abline(a = 0, b = 1, col = "red", lwd = 2) 
+
+segments(x0 = fitted_values, y0 = fitted_values, 
+         x1 = fitted_values, y1 = actual_values, 
+         col = "gray")
+```
+
+This actual vs predicted plot assesses the overall performance of our linear regression model. The points cluster closely about the 45-degree line, indicating that the model's predictions are consistent with the fire damage values from the data and supporting our conclusion that a linear model is the best choice for this data set.
+
+### Leverage Plot
+```{r}
+plot(linear, which = 5)
+```
+
+This leverage plot I generated can help us determine whether any data points have any significant negative influence on the regression model. The plot displays standardized residuauls against leverage values with Cook's distance contour lines overlaid. Experiments 9, 11, and 13 were highlighted due to having leverage slightly higher than normal, but none of the observations exceeded the standard influence theresholds. This plot helps us confirm that the model is stable with no observations greatly affecting the regression model's results.
+
+## Analysis of Summary LM Object
+### Intercept and Slope
+```{r}
+linear <- lm(DAMAGE ~ DISTANCE, data = FIREDAM)
+summary(linear)
+```
+
+This summary of our linear model provides important statistics about the relationship between fire damage and distance from the fire station.
+
+The given estimated regression equation is: $\hat{y} = 10.2779 + 4.9193x$
+
+The intercept, $\beta_0$, represents the predicted fire damage for a property located directly next to the fire station at distance = 0. While it is impractical for a house to be located that close to the fire station, this value serves as a baseline for our analysis.
+
+The slope, $\beta_1 = 4.9193$, represents that fire damage is expected to increase by ~$4,919 dollars for every additional mile further a house is from the nearest fire station.
+
+Analyzing the p-values, both variables have very low p-values
+
+- $\beta_0$: 6.59e-06
+- $\beta_1$: 1.25e-08
+
+Both p-values being very small and well below 0.05 means our intercept and slope are statistically valid, and provide a strong estimation on the amount of fire damage.
+
+### Model Fit: Multiple R^2 and Adjusted R^2
+
+The Multiple $R^2$ value given is 0.9235. This value means that 92.35% of the variation in fire damage is caused by distance from the fire station. A high $R^2$ value indicates that our created model is an excellent fit for our data.
+
+The Adjusted $R^2$ value is 0.9176, which is a very high value and confirms that our predictor is very relevant. The model does not include anything unnecessarily complex and provides an accurate representation of our data.
+
+The formula for the coefficient of determination can be written as:
+
+$$
+R^2 = 1 - \frac{\sum_{i=1}^{n} (y_i - \hat{y}_i)^2}{\sum_{i=1}^{n} (y_i - \bar{y})^2}
+$$
+
+Here, the numerator represents the sum of squared residuals, or how far off the model's predictions are. The denominator is the total sum of squares, which measures how much the data points vary around the mean.
+
+### F-Statistic and Residuals
+
+The F-statistic derived from the model is 156.9 and has a p-value of 1.248e-08. This indicates that our regression model provides a much better fit than a model that does not include any predictors.
+
+The residual standard error is 2.316. This specific statistic measures the average distance that the observed fire damage deviates from predicted values. Our given residual error is very small compared to the larger range of damage values (which go from ~14,000 to ~43,000 dollars).
+
+### Model Summary Conclusion
+
+Based on our regression summary, our linear model provides a strong statistical relationship between distance from fire station and fire damage. Specifically, low p-values and small residual error contribute to supporting our initial hypothesis that longer distances from fire stations do lead to increased fire damage because of slower response times.
+
+## Calculate Confidence Intervals
+
+### Using ciReg() for Confidence Intervals
+
+Using the ciReg() from the  function, we can calculate a 95% confidence interval for the given model parameters:
+
+```{r}
+ciReg(linear, conf.level=0.95, print.out=TRUE)
+```
+
+This intercept, $\beta_0$, has a confidence interval of [7.21, 13.35], suggesting that a fire occurring directly next to the station (at distance = 0) would still have an expected damage falling somewhere within this range.
+
+The slope, $\beta_1$, has a confidence interval of [4.07, 5.77]. This interval means that we are 95% confident the average increase in damage per mile lies somewhere within this interval.
+
+### Using predict() for Confidence Intervals
+
+Using the predict() function, we can estimate the expected fire damage for a house located any distance from a fire station. For our example, I will use a distance of 5 miles.
+
+```{r}
+predict(linear, 
+        newdata = data.frame(DISTANCE = 5), 
+        interval = "confidence")
+```
+
+This model predicts that there will be an average of ~$34,874.58 in property damage for a house located 5 miles from the nearest fire station. The 95% confidence interval for this given estimate ranges from \$32,925.42 to \$36,823.75, meaning we are 95% confident that the mean fire damage for all houses located within 5 miles of the nearest fire station will be inside this range.
+
+This result reinforces our hypothesis that there is a strong linear relationship between distance and fire damage.
+
+### Checking for Outliers Using Cook's Plots
+
+To check for any over-influential data points, we can generate a Cook's Distance plot, which will help us identify disproportinate obvserations that have a large influence on the model's values.
+
+```{r}
+plot(cooks.distance(linear), 
+     type = "h", 
+     main = "Cook's Distance", 
+     ylab = "Cook's Distance", 
+     xlab = "Observation")
+abline(h = 4 / nrow(FIREDAM), col = "red", lty = 2)
+```
+
+The dashed red line represents the threshold (where n=15) of any points that could be considered influential. Any observations located above the line could indeed fall within this identity.
+
+Analyzing the plot, we can see that most points fall under our red threshold line. Observation 13, however, exceeds this value with Cook's Distance larger than 0.4. This suggests that this particular observation is having a significant impact on the fit of our regression model.
+
+Even though it is influential, that doesn't necessarily make it an outlier or even incorrect; it could be considered an extreme yet valid case. **I left it in the data set for the model, but its influence should definitely be considered when interpreting the conclusions from the model.**
+
+# Conclusion
+## Answering Research Question
+
+Ultimately, the goal of this project was to answer my research question of determining whether or not the distance between a house and its nearest fire station had a significant impact on the amount of property damage inflicted. To answer the question, we created two models, a simple linear regression model and a quadratic regression model, to determine which one fit our dataset better. While both represent the data relatively accurately, we showed that the added complexity of the quadratic model provided no significant advantages compared to the simplicity of the linear model, and in some ways was actually less accurate overall.
+
+Using the linear model, we found that there is indeed a statistically significant positive relationship between distance from the nearest fire station and fire damage. The slope of our regression line using our model was calculated to be 4.92, meaning that for every additional mile a home is located from the fire station, we can expect fire damage to increase by about \$4,920. Our model revealed this slope had a very low p-value below 0.05, adding to its statistical significance.
+
+We calculated the 95% confidence interval to be [4.07, 5.77], excluding 0 and further supporting our conclusion that distance contributes to increased fire damage. Our Multiple $R^2$ value was calculated to be 0.9235, meaning that 92.35% of the variation in fire damage can be explained by how far the home is from the fire station and further contributing to the validity of our model.
+
+Using Cook's plots, we identified one observation that is potentially more influential, but within a very small margin. We checked and validated important assumptions about our model, like checking to make sure our residuals were normally distributed and variance was consistent across fitted values, but no major patters were revealed that implied any problem with our model format.
+
+In conclusion, my thorough analysis provides strong evidence to the fact that as the distance between a home and a fire station increases, the amount of property damage it suffers as a result of the fire will also increase.
+
+## Ways that the Model or Experiment Could be Improved
+
+The main way I believe the experiment could be improved is by using a more diverse dataset. Right now, this data only includes 15 individual observations. Using a larger dataset with more unique events would contribute greatly to the validity of the overall experiment.
+
+Including additional factors (predictors) in our experiment like weather conditions or time of day the fire occurred would contribute greatly to the validity of our experiment. For example, how much less property damage would occur if a fire took place during a blizzard heavy rainfall? In a place prone to dry environments and droughts, would the property damage be significantly higher? These environmental conditions are essential to consider when evaluating the validity of our experiment.
+
+There are many great ways to improve this experiment, and ultimately a lot of them come down to consistency. Consistency between the environment, firefighter response time, and precision of damage estimates all hold significant stake in what can be changed in the experiment going forward.
+
+# References
