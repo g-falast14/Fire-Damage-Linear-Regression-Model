@@ -1,4 +1,4 @@
-### Fire Damage Linear Regression Model
+# Fire Damage Linear Regression Model
 
 ## This project examines whether the distance between a home and its nearest fire station influences the amount of fire damage sustained during residential fires. A dataset of 15 suburban fires was analyzed using Simple Linear Regression to evaluate this relationship.
 
